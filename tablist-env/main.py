@@ -20,11 +20,12 @@ from pdftemplate import CustomDocTemplate
 
 import multiprocessing
 from multiprocessing import freeze_support
-    
-        
-def fetch_playlist(link):
+import os
+
+import mysql.connector
 
     
+def fetch_playlist(link):
 
     pattern = re.compile(r'playlist/(.*)\?')
 
@@ -51,139 +52,179 @@ def fetch_playlist(link):
     return artists, songs, playlist_name
 
 
-def find_tab(artist, song, order, title, i):
-
-    options = webdriver.ChromeOptions()
-    options.add_argument('--no-sandbox')
-    options.add_argument('--headless')
-    options.add_argument('--disable-gpu')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument("--window-size=1920,1080")
-
-    driver = webdriver.Chrome(options = options)
-
-    driver.get('https://www.ultimate-guitar.com/')
-    driver.maximize_window()
-
+def find_tab(i, artist, song):
     correct_artist = artist
     correct_song = song
-    #Navigating UG to get tabs    
 
-    
-    #print(to_search[0][0]+" - "+to_search[0][1])
-    #search_bar = driver.find_element(By.XPATH, ".//input[@class = 'Xp1h4 BmE8Q kvpVz']") need to use wait instead for stability purposes 
-    search_bar = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, ".//input[@class = 'Xp1h4 BmE8Q kvpVz']")))
-    search_button = driver.find_element(By.CLASS_NAME, 'rPQkl.mcpNL.IxFbd.CcsqL.qOnLe.QlmHX')
+    db_host = os.environ.get('DB_HOST')
+    db_user = os.environ.get('DB_USER')
+    db_password = os.environ.get('DB_PASSWORD')
 
-    search_bar.send_keys(correct_artist+" - "+correct_song)
+    mydb = mysql.connector.connect(
+        host=db_host,
+        user=db_user,
+        password=db_password,
+        database="tablistdb"
+    )
 
-    try:
-        search_button.click()
-    except:
-        print("stale element")
-
-    #use waits whenever moving to a new page to ensure content has loaded
-    try:
-        element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@class = 'LQUZJ']")))
-    except:
-        order[i] = f"Sorry, unable to find tab for [{correct_artist} - {correct_song}]"
-        title[i] = f"{correct_artist} - {correct_song} - Tab not found"
-        return 
-    #print(element.text)
-
-    current_artist = element.find_element(By.XPATH, ".//div[@class= 'lIKMM lz4gy']").text
-    
-    if current_artist == correct_artist:
-        print('artist found')
-
-    tabs = driver.find_elements(By.XPATH, ".//div[@class= 'LQUZJ']")
-
-    #print(tabs[0])
-    acceptable_tabs = []
-
-    pattern = rf'^{re.escape(correct_song)}(?:\s*\(ver \d+\))?\*?$'
-    compiled_pattern = re.compile(pattern, re.IGNORECASE)
-
-    #print(tabs[0].find_element(By.XPATH, ".//div[@class= 'lIKMM g7KZB']").text+" - "+ tabs[0].find_element(By.XPATH, ".//div[@class= 'lIKMM PdXKy']").text)
-
-    if tabs[0].find_element(By.XPATH, ".//div[@class= 'lIKMM PdXKy']").text == 'Tab' and re.search(compiled_pattern,tabs[0].find_element(By.XPATH, ".//div[@class= 'lIKMM g7KZB']").text):
-        acceptable_tabs.append(tabs[0])
-        #print("initial tab added")
-
-
-
-    for tab in tabs[1:]:
+    mydbcursor = mydb.cursor()
+    #instead of always scraping, check db for tab first
+    #if not in database, scrape, then put it in database
+    query = "SELECT tab FROM songs WHERE artist = %s AND song_title = %s"
+    mydbcursor.execute(query, (correct_artist, correct_song))
+    result = mydbcursor.fetchall()
+    if result:
+        mydbcursor.close()
+        return result[0][0], correct_artist + ' - ' + correct_song
+        
+    else:
+        mydbcursor.close()
         try:
-            artist = tab.find_element(By.XPATH, ".//div[@class= 'lIKMM lz4gy']").text #if this finds text, no further listings should be valid
-        except:
-            print("examining listing")
-            listing_title = tab.find_element(By.XPATH, ".//div[@class= 'lIKMM g7KZB']").text
-            listing_type = tab.find_element(By.XPATH, ".//div[@class= 'lIKMM PdXKy']").text
-            print(listing_title+" - "+listing_type)
-            if listing_type == 'Tab' and re.search(pattern, listing_title):
-                acceptable_tabs.append(tab)
-                print("tab added")
-        else:
-            print("wrong artist detected")
-            break
-        #main idea: identify listings that are tabs with matching title and artist
-    
-    best_rating = 0
-    br_index = int()
-    r = float(3.5)
-    w = float(50)
-    print(len(acceptable_tabs))
-    if len(acceptable_tabs) == 0:
-        print("Sorry, no tabs were found for ["+correct_artist+" - "+correct_song+"]")
-        order[i] = f"Sorry, unable to find tab for [{correct_artist} - {correct_song}]"
-        title[i] = f"{correct_artist} - {correct_song} - Tab not found"
-        return
-    elif len(acceptable_tabs) == 1: 
-        print("only one tab found, no sorting necessary")
-        acceptable_tabs[0].find_element(By.XPATH, ".//a[@class= 'aPPf7 HT3w5 lBssT']").click()
-        element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//section[@class = 'OnD3d kmZt1']"))) #tab itself
-        #print(element.text)
-        author = driver.find_elements(By.XPATH, "//a[@class = 'aPPf7 fcGj5']")[1].text #gets author's username
-        url = driver.current_url
-        textLines = [f"Source: {url}", f"Author: {author}"]
-        textLines.extend(driver.find_element(By.XPATH, "//div[@class = 'P5g5A _PZAs']").text.split('\n')) #gets info like tuning, key, capo
-        textLines.extend(element.text.split('\n')) #adds the tab, splitting it by line
-        #print(len(textLines))
-        
-        
-            
-    else: #need to determine the best tab 
-        #use bayesian probability to avoid automatically selecting a 5-star tab with only 1 rating vs 4.5 star tab with many ratings
-        for idx, tab in enumerate(acceptable_tabs):
-            try:
-                full_stars = len(tab.find_elements(By.XPATH, ".//span[@class= 'kd3Q7 DSnE7']"))
-                half_stars = len(tab.find_elements(By.XPATH, ".//span[@class= 'kd3Q7 RCXwf DSnE7']"))
-                rating = float(full_stars + float(half_stars*0.5))
-                num_rating = int(re.sub(',','',tab.find_element(By.XPATH, ".//div[@class= 'djFV9']").text))
-                #print(f"{rating} stars")
-                #print(f"{num_rating} reviews")
-                bayesian_rating = float((r*w + rating*num_rating)/(w+num_rating))
-                #print(bayesian_rating)
-                if bayesian_rating > best_rating:
-                    best_rating = bayesian_rating
-                    br_index = idx
-            except:
-                pass
-        #print(best_rating)
-        
-        acceptable_tabs[br_index].find_element(By.XPATH, ".//a[@class= 'aPPf7 HT3w5 lBssT']").click()
-        element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//section[@class = 'OnD3d kmZt1']")))
-        #print(element.text)
-        author = driver.find_elements(By.XPATH, "//a[@class = 'aPPf7 fcGj5']")[1].text #gets author's username
-        url = driver.current_url
-        textLines = [f"Source: {url}", f"Author: {author}"]
-        textLines.extend(driver.find_element(By.XPATH, "//div[@class = 'P5g5A _PZAs']").text.split('\n')) #gets info like tuning, key, capo
-        textLines.extend(element.text.split('\n')) #adds the tab, splitting it by line
-        #print(len(textLines))
-        
+           #use recursion if selenium screws up. what can go wrong?    
+            options = webdriver.ChromeOptions()
+            options.add_argument('--no-sandbox')
+            options.add_argument('--headless')
+            options.add_argument('--disable-gpu')
+            options.add_argument('--disable-dev-shm-usage')
+            options.add_argument("--window-size=1920,1080")
 
-    order[i] = textLines
-    title[i] = correct_artist+' - '+song
+            driver = webdriver.Chrome(options = options)
+
+            driver.get('https://www.ultimate-guitar.com/')
+            print("driver on website")
+            #Navigating UG to get tabs    
+
+            
+            #print(to_search[0][0]+" - "+to_search[0][1])
+            #search_bar = driver.find_element(By.XPATH, ".//input[@class = 'Xp1h4 BmE8Q kvpVz']") need to use wait instead for stability purposes 
+            search_bar = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, ".//input[@class = 'Xp1h4 BmE8Q kvpVz']")))
+            search_button = driver.find_element(By.CLASS_NAME, 'rPQkl.mcpNL.IxFbd.CcsqL.qOnLe.QlmHX')
+
+            search_bar.send_keys(correct_artist+" - "+correct_song)
+
+            try:
+                search_button.click()
+            except:
+                print("stale element")
+
+            #use waits whenever moving to a new page to ensure content has loaded
+            try:
+                element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@class = 'LQUZJ']")))
+            except:
+                return f"Sorry, unable to find tab for [{correct_artist} - {correct_song}]", f"{correct_artist} - {correct_song} - Tab not found" 
+            #print(element.text)
+
+            current_artist = element.find_element(By.XPATH, ".//div[@class= 'lIKMM lz4gy']").text
+            
+            if current_artist == correct_artist:
+                print('artist found')
+
+            tabs = driver.find_elements(By.XPATH, ".//div[@class= 'LQUZJ']")
+
+            #print(tabs[0])
+            acceptable_tabs = []
+
+            pattern = rf'^{re.escape(correct_song)}(?:\s*\(ver \d+\))?\*?$'
+            compiled_pattern = re.compile(pattern, re.IGNORECASE)
+
+            #print(tabs[0].find_element(By.XPATH, ".//div[@class= 'lIKMM g7KZB']").text+" - "+ tabs[0].find_element(By.XPATH, ".//div[@class= 'lIKMM PdXKy']").text)
+
+            if tabs[0].find_element(By.XPATH, ".//div[@class= 'lIKMM PdXKy']").text == 'Tab' and re.search(compiled_pattern,tabs[0].find_element(By.XPATH, ".//div[@class= 'lIKMM g7KZB']").text):
+                acceptable_tabs.append(tabs[0])
+                #print("initial tab added")
+
+
+
+            for tab in tabs[1:]:
+                try:
+                    artist = tab.find_element(By.XPATH, ".//div[@class= 'lIKMM lz4gy']").text #if this finds text, no further listings should be valid
+                except:
+                    print("examining listing")
+                    listing_title = tab.find_element(By.XPATH, ".//div[@class= 'lIKMM g7KZB']").text
+                    listing_type = tab.find_element(By.XPATH, ".//div[@class= 'lIKMM PdXKy']").text
+                    print(listing_title+" - "+listing_type)
+                    if listing_type == 'Tab' and re.search(pattern, listing_title):
+                        acceptable_tabs.append(tab)
+                        print("tab added")
+                else:
+                    print("wrong artist detected")
+                    break
+                #main idea: identify listings that are tabs with matching title and artist
+            
+            best_rating = 0
+            br_index = int()
+            r = float(3.5)
+            w = float(50)
+            print(len(acceptable_tabs))
+            mydbcursor = mydb.cursor()
+            if len(acceptable_tabs) == 0:
+                print("Sorry, no tabs were found for ["+correct_artist+" - "+correct_song+"]")
+                order[i] = f"Sorry, unable to find tab for [{correct_artist} - {correct_song}]"
+                title[i] = f"{correct_artist} - {correct_song} - Tab not found"
+                return
+            elif len(acceptable_tabs) == 1: 
+                print("only one tab found, no sorting necessary")
+                acceptable_tabs[0].find_element(By.XPATH, ".//a[@class= 'aPPf7 HT3w5 lBssT']").click()
+                element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//section[@class = 'OnD3d kmZt1']"))) #tab itself
+                #print(element.text)
+                author = driver.find_elements(By.XPATH, "//a[@class = 'aPPf7 fcGj5']")[1].text #gets author's username
+                url = driver.current_url
+                textLines = [f"Source: {url}", f"Author: {author}"]
+                textLines.extend(driver.find_element(By.XPATH, "//div[@class = 'P5g5A _PZAs']").text.split('\n')) #gets info like tuning, key, capo
+                textLines.extend(element.text.split('\n')) #adds the tab, splitting it by line
+                separator = '\n'
+                textLines = separator.join(textLines)
+                #print(len(textLines))
+                
+                
+                    
+            else: #need to determine the best tab 
+                #use bayesian probability to avoid automatically selecting a 5-star tab with only 1 rating vs 4.5 star tab with many ratings
+                for idx, tab in enumerate(acceptable_tabs):
+                    try:
+                        full_stars = len(tab.find_elements(By.XPATH, ".//span[@class= 'kd3Q7 DSnE7']"))
+                        half_stars = len(tab.find_elements(By.XPATH, ".//span[@class= 'kd3Q7 RCXwf DSnE7']"))
+                        rating = float(full_stars + float(half_stars*0.5))
+                        num_rating = int(re.sub(',','',tab.find_element(By.XPATH, ".//div[@class= 'djFV9']").text))
+                        #print(f"{rating} stars")
+                        #print(f"{num_rating} reviews")
+                        bayesian_rating = float((r*w + rating*num_rating)/(w+num_rating))
+                        #print(bayesian_rating)
+                        if bayesian_rating > best_rating:
+                            best_rating = bayesian_rating
+                            br_index = idx
+                    except:
+                        pass
+                #print(best_rating)
+                
+                acceptable_tabs[br_index].find_element(By.XPATH, ".//a[@class= 'aPPf7 HT3w5 lBssT']").click()
+                element = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//section[@class = 'OnD3d kmZt1']")))
+                #print(element.text)
+                author = driver.find_elements(By.XPATH, "//a[@class = 'aPPf7 fcGj5']")[1].text #gets author's username
+                url = driver.current_url
+                textLines = [f"Source: {url}", f"Author: {author}"]
+                textLines.extend(driver.find_element(By.XPATH, "//div[@class = 'P5g5A _PZAs']").text.split('\n')) #gets info like tuning, key, capo
+                textLines.extend(element.text.split('\n')) #adds the tab, splitting it by line
+                separator = '\n'
+                textLines = separator.join(textLines)
+                #print(len(textLines))
+                
+
+            # order[i] = textLines
+            # title[i] = correct_artist+' - '+correct_song
+            
+            driver.quit()
+            query = "INSERT INTO songs (artist, song_title, tab) VALUES (%s, %s, %s)"
+            mydbcursor.execute(query, (correct_artist, correct_song, textLines))
+            mydb.commit()
+            mydbcursor.close()
+            return textLines, correct_artist+' - '+correct_song
+
+
+
+        except:
+            driver.quit()
+            return find_tab(correct_artist,correct_song,i)
 
 def build_entry(title, textLines, story):
     tab_style = PS(name = 'tab',
@@ -195,8 +236,9 @@ def build_entry(title, textLines, story):
     
     story.append(Paragraph(title, h1))
     ignore_indices = []
-    if isinstance(textLines, str):
-        story.append(Paragraph(textLines, tab_style))
+    textLines = re.split('\n', textLines)
+    if len(textLines) == 1:
+        story.append(Paragraph(textLines[0], tab_style))
         story.append(PageBreak())
         return
     for i, line in enumerate(textLines):
@@ -218,8 +260,12 @@ def build_entry(title, textLines, story):
             story.append(Paragraph(line, tab_style))
     story.append(PageBreak())
 
-def main():
-    link = input("Please paste a link to your Spotify playlist:")
+
+
+def main(link):
+    
+    
+    #link = input("Please paste a link to your Spotify playlist:")
     artists, songs, playlist_name = fetch_playlist(link = link)
     doc = CustomDocTemplate(f"{playlist_name}_tablist.pdf")
     #setting up pdf
@@ -236,33 +282,37 @@ def main():
 
     #Fetching playlist
 
-    to_search = list(zip(artists, songs))
+    to_search = list(zip(range(1, len(artists)+1), artists, songs))
     print(to_search)
 
 
 
+    pool = multiprocessing.Pool()
+    tabs = pool.starmap(find_tab, to_search) #finish adjusting from processes to pool
+    pool.close()
+    pool.join()
+    # manager = multiprocessing.Manager()
+    # order = manager.dict()
+    # title = manager.dict()
+    # processes= []
+    # for i, search in enumerate(to_search):
+    #     p = multiprocessing.Process(target=find_tab, args=(search[0], search[1], order, title, i))
+    #     p.start()
+    #     processes.append(p)
 
-    manager = multiprocessing.Manager()
-    order = manager.dict()
-    title = manager.dict()
-    processes= []
-    for i, search in enumerate(to_search):
-        p = multiprocessing.Process(target=find_tab, args=(search[0], search[1], order, title, i))
-        p.start()
-        processes.append(p)
-
-    for i, p in enumerate(processes):
-        p.join()
-        print(f"Process {i} has completed, now trying to append to story")
+    for i, tab in enumerate(tabs):
+        #p.join()
+        print(f"Process {i+1} has completed, now trying to append to story")
         try:
-            build_entry(title[i], order[i], story)
+            build_entry(tab[1], tab[0], story)
             
-            print(f"Process {i} success")
+            print(f"Process {i+1} success")
         except:
-            print(f"Process {i} failure")
+            print(f"Process {i+1} failure")
         
     if len(story)>2:
         doc.multiBuild(story)
+    return f"{playlist_name}_tablist.pdf"
          
     
 if __name__ == "__main__":
