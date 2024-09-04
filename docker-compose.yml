@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   web:
-    image: devindockr/tablist:latest
+    image: devindockr/tablist:1.2
     ports:
       - "8000:8000"
     env_file:

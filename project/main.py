@@ -2,9 +2,13 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.selenium_manager import SeleniumManager
+from selenium.webdriver.chrome.options import Options
 import tempfile
 import re
 
+options = Options()
+SeleniumManager().driver_location(options)
 
 from reportlab.lib.styles import ParagraphStyle as PS
 from reportlab.platypus import PageBreak
@@ -25,7 +29,7 @@ import os
 import mysql.connector
 
 db_host = os.environ.get('DB_HOST')
-db_port = os.environ.get('DB_PORT')
+db_port = 25060
 db_user = os.environ.get('DB_USER')
 db_password = os.environ.get('DB_PASSWORD')
     
