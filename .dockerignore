@@ -1,0 +1,9 @@
+venv/
+.gitignore
+client.txt
+.cache
+__pycache__
+Dockerfile
+.dockerignore
+.git/
+.env
