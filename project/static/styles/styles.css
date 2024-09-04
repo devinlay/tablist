@@ -1,0 +1,204 @@
+html {
+    height: 100%;
+}
+body {
+    background-color: #121212;
+    height: 100%;
+    margin: 0;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+h1{
+    font-family: 'Courier';
+    margin: auto;
+    width: 50%;
+    border-radius: 15px;
+    padding: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    text-align: center;
+    color: black;
+    background-color: rgb(127, 124, 131);
+    box-shadow: inset 0 0 0.5px 1px hsla(0, 0%, 100%, 0.466),
+              /* shadow ring 👇 */
+              0 0 0 1px hsla(0, 0%, 100%, 0.466),
+              /* multiple soft shadows 👇 */
+              0 0.3px 0.4px hsla(0, 0%, 100%, 0.466),
+              0 0.9px 1.5px hsla(0, 0%, 100%, 0.466),
+              0 3.5px 6px hsla(0, 0%, 100%, 0.466),
+}
+
+h2{
+    margin: auto;
+    width: 100%;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: center;
+    font-family: 'Arial';
+    color: white;
+}
+
+.form-container{
+    padding: 10px;
+    margin-top: 10px;
+    background-color: #282828;
+    border: 5px solid #5e43f3;
+    width: 80%;
+    border-radius: 15px;
+    margin: auto;
+    box-shadow: inset 0 0 0.5px 1px hsla(0, 0%,  
+              100%, 0.075),
+              /* shadow ring 👇 */
+              0 0 0 1px hsla(0, 0%, 0%, 0.05),
+              /* multiple soft shadows 👇 */
+              0 0.3px 0.4px hsla(0, 0%, 0%, 0.02),
+              0 0.9px 1.5px hsla(0, 0%, 0%, 0.045),
+              0 3.5px 6px hsla(0, 0%, 0%, 0.09);
+}
+
+.pdf-container-header{
+    margin-top: 10px;
+    margin-left: 20%;
+    margin-right: 20%;
+    margin-bottom: 10px;
+    background-color: #282828;
+    border: 3px solid #5e43f3;
+    width: 60%;
+    border-radius: 15px;
+    box-shadow: inset 0 0 0.5px 1px hsla(0, 0%,  
+              100%, 0.075),
+              /* shadow ring 👇 */
+              0 0 0 1px hsla(0, 0%, 0%, 0.05),
+              /* multiple soft shadows 👇 */
+              0 0.3px 0.4px hsla(0, 0%, 0%, 0.02),
+              0 0.9px 1.5px hsla(0, 0%, 0%, 0.045),
+              0 3.5px 6px hsla(0, 0%, 0%, 0.09);
+}
+
+form{
+    font-family: 'Courier';
+    margin: auto;
+    width: 50%;
+    
+    padding: 10px;
+    text-align: center;
+}
+
+.left {
+    grid-area: left;
+    border-radius: 15px;
+    position: relative;
+    background-color: var(--color-bg-light);
+    box-shadow: inset 0 0 0.5px 1px hsla(0, 0%,  
+              100%, 0.075),
+              /* shadow ring 👇 */
+              0 0 0 1px hsla(0, 0%, 0%, 0.05),
+              /* multiple soft shadows 👇 */
+              0 0.3px 0.4px hsla(0, 0%, 0%, 0.02),
+              0 0.9px 1.5px hsla(0, 0%, 0%, 0.045),
+              0 3.5px 6px hsla(0, 0%, 0%, 0.09);
+    height:90%;
+    top: 5%;
+}
+
+.right {
+    grid-area: right;
+    border-radius: 15px;
+    text-align: center;
+    position: relative;
+    background-color: var(--color-bg-light);
+    box-shadow: inset 0 0 0.5px 1px hsla(0, 0%,  
+              100%, 0.075),
+              /* shadow ring 👇 */
+              0 0 0 1px hsla(0, 0%, 0%, 0.05),
+              /* multiple soft shadows 👇 */
+              0 0.3px 0.4px hsla(0, 0%, 0%, 0.02),
+              0 0.9px 1.5px hsla(0, 0%, 0%, 0.045),
+              0 3.5px 6px hsla(0, 0%, 0%, 0.09);
+    height:90%;
+    top: 5%;
+}
+
+
+
+#pdfViewer {
+    position: relative;
+    z-index: 1;
+}
+
+.container {
+    height: 100%;
+    display: grid;
+    grid-template-columns: 5% 42.5% 5% 42.5% 5%;
+    grid-template-rows: auto;
+    grid-template-areas: "... left ... right ...";
+}
+
+.info{
+    background-color: #282828;
+    border: 5px solid #5e43f3;
+    border-radius: 15px;
+    margin: 5%;
+    width: 100%;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: center;
+    font-family: 'Arial';
+    width:90%;
+    height:auto;
+    justify-content: center;
+    line-height: 1.6;
+    color:white;
+}
+
+.loading {
+    display: none;
+    background-color: #282828;
+    border: 5px solid #5e43f3;
+    border-radius: 15px;
+    margin: auto;
+    width: 100%;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: center;
+    font-family: 'Arial';
+    width:20%;
+    color: white
+}
+
+.spinner {
+    border: 16px solid #f3f3f3; /* Light grey */
+    border-top: 16px solid #5e43f3; /* Blue */
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    animation: spin 2s linear infinite;
+    position: absolute; /* Position it absolutely */
+    top: 40%; /* Center vertically */
+    left: 40%; /* Center horizontally */
+    transform: translate(-50%, -50%); /* Centering */
+    z-index: 1; /* Ensure it is behind the PDF viewer */
+    display: none; /* Initially hidden */
+    
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+@media (max-width: 768px) {
+    .container {
+        display: grid;
+        grid-template-columns: 1fr; /* 1 column layout */
+        grid-template-areas: 
+            "left"
+            "right";
+    }
+    .spinner {
+        width: 30px; /* Smaller size for mobile */
+        height: 30px; /* Smaller size for mobile */
+        left: 36%;
+    }
+}

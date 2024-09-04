@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Tablist</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/styles.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static',filename='favicon.ico') }}">
+    <style>
+      /* CSS for loading spinner */
+      .spinner {
+        border: 16px solid #f3f3f3; /* Light grey */
+        border-top: 16px solid #3498db; /* Blue */
+        border-radius: 50%;
+        width: 120px;
+        height: 120px;
+        animation: spin 2s linear infinite;
+        margin: auto;
+        display: none; /* Initially hidden */
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="left">   
+        <h1>{{ message }}</h1>
+        <div class="form-container">
+          <h2>Paste a link to a Spotify playlist below</h2>
+          <form id="pdfForm" action="/generate-tabs" method="POST">
+            <input type="text" name="link" placeholder="Link goes here" />
+            <button type="submit">Generate PDF</button>
+          </form>
+        </div>
+        <div class = "info">
+          Tablist generates a PDF from your Spotify playlist by sourcing tabs from UltimateGuitar.com.<br>
+          Searching for a tab can take a long time. Each time a new song is searched for, its tab is added to a database (making future requests for the song much faster).
+          This means that you can improve Tablist just by using it!
+        </div>
+      </div>
+      <div class="right" >
+        <div class = "pdf-container-header">
+          <h2>Your tabs will appear here!</h2>
+        </div>
+        <div class="loading" id="loading"> Searching for tabs... </div>
+        <div class="spinner" id="spinner"></div>
+        <embed id="pdfViewer" style="width:90%; height:90%; border:none;" type="application/pdf"></embed>
+        <script>
+          document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('pdfForm').addEventListener('submit', function(event) {
+              event.preventDefault(); // Prevent the form from submitting the traditional way
+
+              const form = event.target;
+              const formData = new FormData(form);
+              const spinner = document.getElementById('spinner');
+              const loading = document.getElementById('loading');
+              const embed = document.getElementById('pdfViewer');
+
+              // Show the spinner
+              loading.style.display = 'block';
+              spinner.style.display = 'block';
+
+              fetch('/generate-tabs', {
+                method: 'POST',
+                body: formData
+              })
+                .then(response => response.blob())
+                .then(blob => {
+                  const url = URL.createObjectURL(blob);
+                  embed.src = url;
+
+                  // Hide the spinner after a short delay
+                  setTimeout(() => {
+                    loading.style.display = 'none';
+                    spinner.style.display = 'none';
+                  }, 1000); // Adjust the delay if needed
+
+                })
+                .catch(error => {
+                  loading.style.display = 'none';
+                  spinner.style.display = 'none';
+                  console.error('Error:', error);
+                });
+            });
+          });
+        </script>
+      </div>
+    </div>
+    <script src='https://storage.ko-fi.com/cdn/scripts/overlay-widget.js'></script>
+      <script>
+        kofiWidgetOverlay.draw('devintablist', {
+          'type': 'floating-chat',
+          'floating-chat.donateButton.text': 'Support me',
+          'floating-chat.donateButton.background-color': '#323842',
+          'floating-chat.donateButton.text-color': '#fff'
+        });
+    </script>
+  </body>
+</html>
