@@ -24,7 +24,7 @@ scheduler.start()
 
 @app.route('/')
 def hello():
-    return render_template('index.html', message='Tablist')
+    return render_template('index.html', message='Tab-list')
 
 @app.route('/generate-tabs', methods =['POST'])
 def generate_tabs():
@@ -37,6 +37,6 @@ def generate_tabs():
     #return app
 
 if __name__ == '__main__':
-    app.run(host = '0.0.0.0', port = 8000)
+    app.run(host = '0.0.0.0', port = 80)
 
 
