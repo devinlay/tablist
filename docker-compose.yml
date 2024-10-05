@@ -4,7 +4,10 @@ services:
   web:
     image: devindockr/tablist:1.2
     ports:
+      - "8080:8080"
       - "80:80"
+      - "443:443"
+      - "2053:2053"
     env_file:
       - .env
     build:

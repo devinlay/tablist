@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, send_file
 import main
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
+from waitress import serve
 
 #def create_app():
 app = Flask(__name__, template_folder="templates")
@@ -37,6 +38,7 @@ def generate_tabs():
     #return app
 
 if __name__ == '__main__':
-    app.run(host = '0.0.0.0', port = 80)
+    #app.run(host = '0.0.0.0', port = 443)
+    serve(app, host='0.0.0.0', port=8080)
 
 

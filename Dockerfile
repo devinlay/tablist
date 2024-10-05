@@ -27,7 +27,10 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
 RUN apt-get update && apt-get -y install google-chrome-stable
 
 # Expose the port that the app will run on
+EXPOSE 8080
 EXPOSE 80
+EXPOSE 443
+EXPOSE 2053
 
 # Run the Flask app with waitress
-CMD ["waitress-serve", "--host=0.0.0.0", "--port=80", "app:app"]
+CMD ["python", "app.py"]
