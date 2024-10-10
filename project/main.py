@@ -49,10 +49,11 @@ def fetch_playlist(link):
     artists = []
     songs = []
     pattern = r'(?:(?:\s+-\s+)?\s*(?:\(|\[|\{)?(?:\d{4})?\s*-?\s*(?:Remaster(?:ed)?)(?:\d{4})?\s*(?:\)|\]|\})?)(.*)|\s*-\s*(.*)|\(feat.*'
+    pattern2 = r'[^a-zA-Z0-9\s]+'
     for idx, item in enumerate(results['items']):
         track = item['track']
         artists.append(track['artists'][0]['name'])
-        songs.append(re.sub(pattern, '', track['name']).strip())
+        songs.append(re.sub(re.sub(pattern, '', track['name']).strip(), '', pattern2))
         print(songs[idx], " - ", artists[idx])
     return artists, songs, playlist_name
 
