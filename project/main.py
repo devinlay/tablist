@@ -53,7 +53,7 @@ def fetch_playlist(link):
     for idx, item in enumerate(results['items']):
         track = item['track']
         artists.append(track['artists'][0]['name'])
-        songs.append(re.sub(re.sub(pattern, '', track['name']).strip(), '', pattern2))
+        songs.append(re.sub(pattern2, '', re.sub(pattern, '', track['name']).strip()))
         print(songs[idx], " - ", artists[idx])
     return artists, songs, playlist_name
 

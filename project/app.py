@@ -39,6 +39,6 @@ def generate_tabs():
 
 if __name__ == '__main__':
     #app.run(host = '0.0.0.0', port = 443)
-    serve(app, host='0.0.0.0', port=80)
+    serve(app, host='0.0.0.0', port=8080)
 
 
